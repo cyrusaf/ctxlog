@@ -7,31 +7,11 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-var (
-	// Logger can be overwritten by the consumer if they want to change the
-	// settings. It can also be used directly in case the global log methods
-	// don't expose all functionality needed.
-	Logger *slog.Logger = slog.New(TagHandler{slog.NewJSONHandler(os.Stdout)})
-)
-
-func InfoCtx(ctx context.Context, msg string, args ...any) {
-	Logger.InfoCtx(ctx, msg, args...)
-}
-
-func DebugCtx(ctx context.Context, msg string, args ...any) {
-	Logger.DebugCtx(ctx, msg, args...)
-}
-
-func WarnCtx(ctx context.Context, msg string, args ...any) {
-	Logger.WarnCtx(ctx, msg, args...)
-}
-
-func ErrorCtx(ctx context.Context, msg string, args ...any) {
-	Logger.ErrorCtx(ctx, msg, args...)
-}
-
-func LogCtx(ctx context.Context, level slog.Level, msg string, args ...any) {
-	Logger.Log(ctx, level, msg, args...)
+func NewTagHandler(baseHandler slog.Handler) slog.Handler {
+	if baseHandler == nil {
+		baseHandler = slog.NewJSONHandler(os.Stdout)
+	}
+	return TagHandler{baseHandler}
 }
 
 type TagHandler struct {

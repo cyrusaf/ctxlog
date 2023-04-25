@@ -4,21 +4,47 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/cyrusaf/ctxlog"
 	"golang.org/x/exp/slog"
 )
 
+func ExampleTagHandler() {
+	ctx := context.Background()
+
+	// Create a tag and json based logger and set it as the default logger
+	handlerOpts := slog.HandlerOptions{
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			// Remove time from the output for predictable test output.
+			if a.Key == slog.TimeKey {
+				return slog.Attr{}
+			}
+			return a
+		},
+	}
+	logger := slog.New(ctxlog.NewTagHandler(handlerOpts.NewJSONHandler(os.Stdout)))
+	slog.SetDefault(logger)
+
+	// Can set tags on the context using ctxlog.WithTag(ctx, key, value)
+	ctx = ctxlog.WithTag(ctx, "hello", "world")
+
+	// Can also set tags when logging. Can use slog global methods such as
+	// InfoCtx if set as default logger.
+	slog.InfoCtx(ctx, "test", "foo", "bar")
+	// Output:{"level":"INFO","msg":"test","foo":"bar","hello":"world"}
+}
+
 func TestLogger(t *testing.T) {
 	tt := []struct {
 		fn    func(context.Context, string, ...any)
 		level slog.Level
 	}{
-		{ctxlog.InfoCtx, slog.LevelInfo},
-		{ctxlog.WarnCtx, slog.LevelWarn},
-		{ctxlog.ErrorCtx, slog.LevelError},
-		{ctxlog.DebugCtx, slog.LevelDebug},
+		{slog.InfoCtx, slog.LevelInfo},
+		{slog.WarnCtx, slog.LevelWarn},
+		{slog.ErrorCtx, slog.LevelError},
+		{slog.DebugCtx, slog.LevelDebug},
 	}
 
 	for _, tc := range tt {
@@ -29,7 +55,8 @@ func TestLogger(t *testing.T) {
 			jsonHandler := slog.HandlerOptions{
 				Level: slog.LevelDebug,
 			}.NewJSONHandler(&b)
-			ctxlog.Logger = slog.New(ctxlog.TagHandler{jsonHandler})
+			tagHandler := ctxlog.NewTagHandler(jsonHandler)
+			slog.SetDefault(slog.New(tagHandler))
 
 			ctx = ctxlog.WithTag(ctx, "hello", "world")
 			tc.fn(ctx, "test", "foo", "bar")
