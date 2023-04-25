@@ -7,7 +7,7 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-func NewTagHandler(baseHandler slog.Handler) slog.Handler {
+func NewTagHandler(baseHandler slog.Handler) TagHandler {
 	if baseHandler == nil {
 		baseHandler = slog.NewJSONHandler(os.Stdout)
 	}
