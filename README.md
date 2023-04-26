@@ -1,10 +1,20 @@
 # ctxlog
 
-Wrapper on top of [golang.org/x/exp/slog](https://pkg.go.dev/golang.org/x/exp/slog) that annotates logs with tags set on the context.
+[![Go Reference](https://pkg.go.dev/badge/github.com/cyrusaf/ctxlog.svg)](https://pkg.go.dev/github.com/cyrusaf/ctxlog)
+
+Handler for [golang.org/x/exp/slog](https://pkg.go.dev/golang.org/x/exp/slog)
+that annotates logs with `slog.Attr` set on the context. Provides methods for
+adding `slog.Attr` to the context and a `slog.Handler` for automatically reading
+them from the context and adding them to log lines. Useful for adding fields
+such as `request_id`, `xray_trace_id`, or `caller` to log lines.
 
 ## Usage
 
 `ctxlog` can be used as a global logger (recommended) by using `slog.SetDefault()`.
+
+Use `ctxlog.WithAttrs(ctx, attrs...)` to add `slog.Attr` to the context. Use
+`ctxlog.NewHandler(baseHandler)` to create a new `slog.Handler` that reads attrs
+from the context and adds them to log lines automatically. 
 
 ```golang
 package main
