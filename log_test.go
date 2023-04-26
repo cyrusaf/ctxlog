@@ -11,7 +11,7 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-func ExampleTagHandler() {
+func ExampleHandler() {
 	ctx := context.Background()
 
 	// Create a tag and json based logger and set it as the default logger
@@ -24,16 +24,16 @@ func ExampleTagHandler() {
 			return a
 		},
 	}
-	logger := slog.New(ctxlog.NewTagHandler(handlerOpts.NewJSONHandler(os.Stdout)))
+	logger := slog.New(ctxlog.NewHandler(handlerOpts.NewJSONHandler(os.Stdout)))
 	slog.SetDefault(logger)
 
 	// Can set tags on the context using ctxlog.WithTag(ctx, key, value)
-	ctx = ctxlog.WithTag(ctx, "hello", "world")
+	ctx = ctxlog.WithAttrs(ctx, slog.String("hello", "world"))
 
 	// Can also set tags when logging. Can use slog global methods such as
 	// InfoCtx if set as default logger.
-	slog.InfoCtx(ctx, "test", "foo", "bar")
-	// Output:{"level":"INFO","msg":"test","foo":"bar","hello":"world"}
+	slog.InfoCtx(ctx, "test", slog.Int("foo", 5))
+	// Output:{"level":"INFO","msg":"test","foo":5,"hello":"world"}
 }
 
 func TestLogger(t *testing.T) {
@@ -55,10 +55,10 @@ func TestLogger(t *testing.T) {
 			jsonHandler := slog.HandlerOptions{
 				Level: slog.LevelDebug,
 			}.NewJSONHandler(&b)
-			tagHandler := ctxlog.NewTagHandler(jsonHandler)
+			tagHandler := ctxlog.NewHandler(jsonHandler)
 			slog.SetDefault(slog.New(tagHandler))
 
-			ctx = ctxlog.WithTag(ctx, "hello", "world")
+			ctx = ctxlog.WithAttrs(ctx, slog.String("hello", "world"))
 			tc.fn(ctx, "test", "foo", "bar")
 
 			l := make(map[string]interface{})

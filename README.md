@@ -16,18 +16,17 @@ import (
 )
 
 func main() {
-    ctx := context.Background()
+ ctx := context.Background()
 
-    // Create a tag and json based logger and set it as the default logger
-    logger := slog.New(ctxlog.NewTagHandler(slog.NewJSONHandler(os.Stdout)))
-    slog.SetDefault(logger)
+ // Create a tag and json based logger and set it as the default logger
+ logger := slog.New(ctxlog.NewHandler(slog.NewJSONHandler(os.Stdout)))
+ slog.SetDefault(logger)
 
-    // Can set tags on the context using ctxlog.WithTag(ctx, key, value)
-    ctx = ctxlog.WithTag(ctx, "hello", "world")
+ // Can set tags on the context using ctxlog.WithTag(ctx, key, value)
+ ctx = ctxlog.WithAttrs(ctx, slog.String("hello", "world"))
 
-    // Can also set tags when logging. Can use slog global methods such as
-    // InfoCtx if set as the default logger.
-    slog.InfoCtx(ctx, "test", "foo", "bar")
-    // Output:{"time":"2023-04-25T19:18:13.457009-07:00","level":"INFO","msg":"test","foo":"bar","hello":"world"}
-}
+ // Can also set tags when logging. Can use slog global methods such as
+ // InfoCtx if set as default logger.
+ slog.InfoCtx(ctx, "test", slog.Int("foo", 5))
+ // Output:{"level":"INFO","msg":"test","foo":5,"hello":"world"}}
 ```
