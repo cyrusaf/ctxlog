@@ -10,8 +10,6 @@ such as `request_id`, `xray_trace_id`, or `caller` to log lines.
 
 ## Usage
 
-`ctxlog` can be used as a global logger (recommended) by using `slog.SetDefault()`.
-
 Use `ctxlog.WithAttrs(ctx, attrs...)` to add `slog.Attr` to the context. Use
 `ctxlog.NewHandler(baseHandler)` to create a new `slog.Handler` that reads attrs
 from the context and adds them to log lines automatically. 
@@ -28,15 +26,16 @@ import (
 func main() {
  ctx := context.Background()
 
- // Create a tag and json based logger and set it as the default logger
+ // Create ctxlog and json logger and set it as the default logger
  logger := slog.New(ctxlog.NewHandler(slog.NewJSONHandler(os.Stdout)))
  slog.SetDefault(logger)
 
- // Can set tags on the context using ctxlog.WithTag(ctx, key, value)
+ // Can set attrs on the context using ctxlog.WithAttrs(ctx, ...slog.Attr)
  ctx = ctxlog.WithAttrs(ctx, slog.String("hello", "world"))
 
- // Can also set tags when logging. Can use slog global methods such as
- // InfoCtx if set as default logger.
- slog.InfoCtx(ctx, "test", slog.Int("foo", 5))
- // Output:{"level":"INFO","msg":"test","foo":5,"hello":"world"}}
+ // Use slog methods such as InfoCtx and the ctxlog handler will automatically
+ // attach attrs from the context to the structured logs.
+ slog.InfoCtx(ctx, "test")
+ // Output:{"level":"INFO","msg":"test","hello":"world"}
+}
 ```

@@ -14,7 +14,7 @@ import (
 func ExampleHandler() {
 	ctx := context.Background()
 
-	// Create a tag and json based logger and set it as the default logger
+	// Create a ctxlog and json based logger and set it as the default logger
 	handlerOpts := slog.HandlerOptions{
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			// Remove time from the output for predictable test output.
@@ -27,13 +27,13 @@ func ExampleHandler() {
 	logger := slog.New(ctxlog.NewHandler(handlerOpts.NewJSONHandler(os.Stdout)))
 	slog.SetDefault(logger)
 
-	// Can set tags on the context using ctxlog.WithTag(ctx, key, value)
+	// Can set attrs on the context using ctxlog.WithAttrs(ctx, ...slog.Attr)
 	ctx = ctxlog.WithAttrs(ctx, slog.String("hello", "world"))
 
-	// Can also set tags when logging. Can use slog global methods such as
-	// InfoCtx if set as default logger.
-	slog.InfoCtx(ctx, "test", slog.Int("foo", 5))
-	// Output:{"level":"INFO","msg":"test","foo":5,"hello":"world"}
+	// Use slog methods such as InfoCtx and the ctxlog handler will automatically
+	// attach attrs from the context to the structured logs.
+	slog.InfoCtx(ctx, "test")
+	// Output:{"level":"INFO","msg":"test","hello":"world"}
 }
 
 func TestLogger(t *testing.T) {
