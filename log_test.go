@@ -24,7 +24,8 @@ func ExampleHandler() {
 			return a
 		},
 	}
-	logger := slog.New(ctxlog.NewHandler(handlerOpts.NewJSONHandler(os.Stdout)))
+
+	logger := slog.New(ctxlog.NewHandler(slog.NewJSONHandler(os.Stdout, &handlerOpts)))
 	slog.SetDefault(logger)
 
 	// Can set attrs on the context using ctxlog.WithAttrs(ctx, ...slog.Attr)
@@ -52,10 +53,9 @@ func TestLogger(t *testing.T) {
 			ctx := context.Background()
 			b := bytes.Buffer{}
 
-			jsonHandler := slog.HandlerOptions{
+			tagHandler := ctxlog.NewHandler(slog.NewJSONHandler(&b, &slog.HandlerOptions{
 				Level: slog.LevelDebug,
-			}.NewJSONHandler(&b)
-			tagHandler := ctxlog.NewHandler(jsonHandler)
+			}))
 			slog.SetDefault(slog.New(tagHandler))
 
 			ctx = ctxlog.WithAttrs(ctx, slog.String("hello", "world"))

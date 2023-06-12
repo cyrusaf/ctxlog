@@ -9,7 +9,7 @@ import (
 
 func NewHandler(baseHandler slog.Handler) Handler {
 	if baseHandler == nil {
-		baseHandler = slog.NewJSONHandler(os.Stdout)
+		baseHandler = slog.NewJSONHandler(os.Stdout, nil)
 	}
 	return Handler{baseHandler}
 }
