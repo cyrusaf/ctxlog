@@ -31,9 +31,9 @@ func ExampleHandler() {
 	// Can set attrs on the context using ctxlog.WithAttrs(ctx, ...slog.Attr)
 	ctx = ctxlog.WithAttrs(ctx, slog.String("hello", "world"))
 
-	// Use slog methods such as InfoCtx and the ctxlog handler will automatically
+	// Use slog methods such as InfoContext and the ctxlog handler will automatically
 	// attach attrs from the context to the structured logs.
-	slog.InfoCtx(ctx, "test")
+	slog.InfoContext(ctx, "test")
 	// Output:{"level":"INFO","msg":"test","hello":"world"}
 }
 
@@ -42,10 +42,10 @@ func TestLogger(t *testing.T) {
 		fn    func(context.Context, string, ...any)
 		level slog.Level
 	}{
-		{slog.InfoCtx, slog.LevelInfo},
-		{slog.WarnCtx, slog.LevelWarn},
-		{slog.ErrorCtx, slog.LevelError},
-		{slog.DebugCtx, slog.LevelDebug},
+		{slog.InfoContext, slog.LevelInfo},
+		{slog.WarnContext, slog.LevelWarn},
+		{slog.ErrorContext, slog.LevelError},
+		{slog.DebugContext, slog.LevelDebug},
 	}
 
 	for _, tc := range tt {

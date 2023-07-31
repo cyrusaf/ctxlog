@@ -33,9 +33,9 @@ func main() {
  // Can set attrs on the context using ctxlog.WithAttrs(ctx, ...slog.Attr)
  ctx = ctxlog.WithAttrs(ctx, slog.String("hello", "world"))
 
- // Use slog methods such as InfoCtx and the ctxlog handler will automatically
+ // Use slog methods such as InfoContext and the ctxlog handler will automatically
  // attach attrs from the context to the structured logs.
- slog.InfoCtx(ctx, "test")
+ slog.InfoContext(ctx, "test")
  // Output:{"level":"INFO","msg":"test","hello":"world"}
 }
 ```
