@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"os"
 	"testing"
 
 	"github.com/cyrusaf/ctxlog"
-	"golang.org/x/exp/slog"
 )
 
 func ExampleHandler() {
