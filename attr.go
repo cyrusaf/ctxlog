@@ -2,8 +2,7 @@ package ctxlog
 
 import (
 	"context"
-
-	"golang.org/x/exp/slog"
+	"log/slog"
 )
 
 type ctxkey string

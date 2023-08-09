@@ -2,10 +2,10 @@ package ctxlog_test
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/cyrusaf/ctxlog"
-	"golang.org/x/exp/slog"
 )
 
 func TestTags(t *testing.T) {

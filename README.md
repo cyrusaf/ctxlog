@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/cyrusaf/ctxlog.svg)](https://pkg.go.dev/github.com/cyrusaf/ctxlog)
 
-Handler for [golang.org/x/exp/slog](https://pkg.go.dev/golang.org/x/exp/slog)
+Handler for [log/slog](https://pkg.go.dev/log/slog)
 that annotates logs with `slog.Attr` set on the context. Provides methods for
 adding `slog.Attr` to the context and a `slog.Handler` for automatically reading
 them from the context and adding them to log lines. Useful for adding fields
@@ -19,7 +19,7 @@ package main
 
 import (
     "context"
-    "golang.org/x/exp/slog"
+    "log/slog"
     "github.com/cyrusaf/ctxlog"
 )
 

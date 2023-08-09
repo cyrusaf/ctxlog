@@ -2,9 +2,8 @@ package ctxlog
 
 import (
 	"context"
+	"log/slog"
 	"os"
-
-	"golang.org/x/exp/slog"
 )
 
 func NewHandler(baseHandler slog.Handler) Handler {
