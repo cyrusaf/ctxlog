@@ -56,15 +56,15 @@ func TestLogger(t *testing.T) {
 			tagHandler := ctxlog.NewHandler(slog.NewJSONHandler(&b, &slog.HandlerOptions{
 				Level: slog.LevelDebug,
 			}))
-			slog.SetDefault(slog.New(tagHandler))
+			slog.SetDefault(slog.New(tagHandler).With("baz", "mumble"))
 
 			ctx = ctxlog.WithAttrs(ctx, slog.String("hello", "world"))
 			tc.fn(ctx, "test", "foo", "bar")
 
 			l := make(map[string]interface{})
 			json.Unmarshal(b.Bytes(), &l)
-			if len(l) != 5 {
-				t.Fatalf("expected 5 keys in log line, but got %d instead", len(l))
+			if len(l) != 6 {
+				t.Fatalf("expected 6 keys in log line, but got %d instead", len(l))
 			}
 			if val, ok := l["level"].(string); !ok || val != tc.level.String() {
 				t.Fatalf(`expect level to be %q but got "%v instead"`, tc.level.String(), l["level"])
@@ -77,6 +77,9 @@ func TestLogger(t *testing.T) {
 			}
 			if val, ok := l["foo"].(string); !ok || val != "bar" {
 				t.Fatalf(`expect foo tag to be "bar" but got "%v" instead"`, l["foo"])
+			}
+			if val, ok := l["baz"].(string); !ok || val != "mumble" {
+				t.Fatalf(`expect baz tag to be "mumble" but got "%v" instead"`, val)
 			}
 		})
 	}
