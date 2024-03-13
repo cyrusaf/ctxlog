@@ -39,3 +39,45 @@ func main() {
  // Output:{"level":"INFO","msg":"test","hello":"world"}
 }
 ```
+
+## Global Attributes
+
+Sometimes you want a sub-function to be able to "pass back" attributes to the
+parent. An example of this is when using middleware to log errors. In the
+situation below, the handler `h` may handle parsing the `req` and pull out
+certain fields that should be logged if there is an error. Unfortunately,
+because `WithAttrs(...)` only attaches the attrs to a child context, the parent
+function will not have access to these attrs.
+
+```golang
+func logMiddleware(ctx context.Context, h Handler, req []byte) {
+    err := h(ctx, req)
+    if err != nil {
+        slog.ErrorContext(ctx, "request error")
+    }
+}
+```
+
+`ctxlog` provides a way to pass back these attributes for logging through
+__global attributes__.
+
+```golang
+func logMiddleware(ctx context.Context, h Handler, req []byte) {
+    // First, set the anchor point/root of global attrs. This allows us to
+    // scope global attrs to each request.
+    ctx = ctxlog.AnchorGlobalAttrs(ctx) 
+    err := h(ctx, req)
+    if err != nil {
+        slog.ErrorContext(ctx, "request error")
+    }
+}
+
+func myHandler(ctx context.Context, req []byte) error {
+    parsedReq := parseRequest(req)
+
+    // Use ctxlog.WithGlobalAttrs to "pass back" attrs to the anchor point
+    ctx = ctxlog.WithGlobalAttrs(ctx, slog.String("request_id", parsedReq.request_id))
+    // ...
+    return nil
+}
+```
