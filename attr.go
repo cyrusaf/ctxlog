@@ -10,17 +10,28 @@ type globalctxkey struct{}
 
 func WithAttrs(ctx context.Context, newAttrs ...slog.Attr) context.Context {
 	// Get fields if set
-	attrs, _ := ctx.Value(ctxkey{}).([]slog.Attr)
-	attrs = append(attrs, newAttrs...)
+	attrs, _ := ctx.Value(ctxkey{}).(map[string]slog.Attr)
+	if attrs == nil {
+		attrs = make(map[string]slog.Attr, len(newAttrs))
+	}
+	for _, attr := range newAttrs {
+		attrs[attr.Key] = attr
+	}
 	ctx = context.WithValue(ctx, ctxkey{}, attrs)
 	return ctx
 }
 
 func GetAttrs(ctx context.Context) []slog.Attr {
-	attrs, _ := ctx.Value(ctxkey{}).([]slog.Attr)
-	globalAttrs, ok := ctx.Value(globalctxkey{}).(*[]slog.Attr)
-	if ok && globalAttrs != nil {
-		attrs = append(attrs, *globalAttrs...)
+	attrMap, _ := ctx.Value(ctxkey{}).(map[string]slog.Attr)
+	attrs := make([]slog.Attr, 0, len(attrMap))
+	for _, attr := range attrMap {
+		attrs = append(attrs, attr)
+	}
+	globalAttrMap, ok := ctx.Value(globalctxkey{}).(*map[string]slog.Attr)
+	if ok && globalAttrMap != nil {
+		for _, attr := range *globalAttrMap {
+			attrs = append(attrs, attr)
+		}
 	}
 	return attrs
 }
@@ -65,16 +76,22 @@ func AnchorGlobalAttrs(ctx context.Context) context.Context {
 // If AnchorGlobalAttrs has not been called yet for the given context, the
 // returned context will be set as the anchor point.
 func WithGlobalAttrs(ctx context.Context, newAttrs ...slog.Attr) context.Context {
-	attrs, ok := ctx.Value(globalctxkey{}).(*[]slog.Attr)
+	attrs, ok := ctx.Value(globalctxkey{}).(*map[string]slog.Attr)
 	if !ok {
 		ctx, attrs = initGlobalAttrs(ctx)
 	}
-	*attrs = append(*attrs, newAttrs...)
+	if attrs == nil {
+		m := make(map[string]slog.Attr, len(newAttrs))
+		attrs = &m
+	}
+	for _, attr := range newAttrs {
+		(*attrs)[attr.Key] = attr
+	}
 	return ctx
 }
 
-func initGlobalAttrs(ctx context.Context) (context.Context, *[]slog.Attr) {
-	globalAttrs := &[]slog.Attr{}
+func initGlobalAttrs(ctx context.Context) (context.Context, *map[string]slog.Attr) {
+	globalAttrs := &map[string]slog.Attr{}
 	ctx = context.WithValue(ctx, globalctxkey{}, globalAttrs)
 	return ctx, globalAttrs
 }
