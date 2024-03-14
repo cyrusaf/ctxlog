@@ -23,22 +23,10 @@ func TestTags(t *testing.T) {
 	_ = ctxlog.WithGlobalAttrs(ctx, attr3)
 	_ = ctxlog.WithGlobalAttrs(ctx, attr4)
 
+	expectedAttrs := []slog.Attr{attr1, attr2, attr3, attr4}
+
 	attrs := ctxlog.GetAttrs(ctx)
-	if len(attrs) != 4 {
-		t.Fatalf("expected 4 attrs, but got %d instead", len(attrs))
-	}
-	if !attrs[0].Equal(attr1) {
-		t.Fatalf(`expected attr to be %+v but got %+v instead`, attr1, attrs[0])
-	}
-	if !attrs[1].Equal(attr2) {
-		t.Fatalf(`expected attr to be %+v but got %+v instead`, attr2, attrs[1])
-	}
-	if !attrs[2].Equal(attr3) {
-		t.Fatalf(`expected attr to be %+v but got %+v instead`, attr3, attrs[2])
-	}
-	if !attrs[3].Equal(attr4) {
-		t.Fatalf(`expected attr to be %+v but got %+v instead`, attr4, attrs[3])
-	}
+	assertAttrs(t, expectedAttrs, attrs)
 }
 
 func TestWithGlobalAttrsWithoutAnchor(t *testing.T) {
@@ -47,15 +35,51 @@ func TestWithGlobalAttrsWithoutAnchor(t *testing.T) {
 	ctx2 := ctxlog.WithGlobalAttrs(ctx, attr1)
 
 	attrs := ctxlog.GetAttrs(ctx2)
-	if len(attrs) != 1 {
-		t.Fatalf("expected 1 attr, but got %d instead", len(attrs))
-	}
-	if !attrs[0].Equal(attr1) {
-		t.Fatalf(`expected attr to be %+v but got %+v instead`, attr1, attrs[0])
-	}
+	assertAttrs(t, []slog.Attr{attr1}, attrs)
 
 	attrs = ctxlog.GetAttrs(ctx)
 	if len(attrs) != 0 {
 		t.Fatalf("expected 0 attrs, but got %d instead", len(attrs))
 	}
+}
+
+func TestOverwriteAttr(t *testing.T) {
+	ctx := context.Background()
+	attr1 := slog.String("foo", "bar")
+	ctx = ctxlog.WithAttrs(ctx, attr1)
+
+	attr2 := slog.String("foo", "baz")
+	ctx = ctxlog.WithAttrs(ctx, attr2)
+
+	attrs := ctxlog.GetAttrs(ctx)
+	assertAttrs(t, []slog.Attr{attr2}, attrs)
+}
+
+func assertAttrs(t *testing.T, expected, actual []slog.Attr) {
+	t.Helper()
+
+	if len(expected) != len(actual) {
+		t.Fatalf("expected %d attrs, but got %d instead", len(expected), len(actual))
+	}
+
+	expectedMap := toMap(expected)
+	actualMap := toMap(actual)
+	for key, expected := range expectedMap {
+		actual, ok := actualMap[key]
+		if !ok {
+			t.Fatalf("missing attr %+v", expected)
+		}
+		if !expected.Equal(actual) {
+			t.Fatalf("attrs not equal - expected: %+v, actual: %+v", expected, actual)
+		}
+	}
+
+}
+
+func toMap(attrs []slog.Attr) map[string]slog.Attr {
+	m := make(map[string]slog.Attr, len(attrs))
+	for _, attr := range attrs {
+		m[attr.Key] = attr
+	}
+	return m
 }
