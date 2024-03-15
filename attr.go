@@ -3,6 +3,7 @@ package ctxlog
 import (
 	"context"
 	"log/slog"
+	"sync/atomic"
 )
 
 type ctxkey struct{}
@@ -10,9 +11,12 @@ type globalctxkey struct{}
 
 func WithAttrs(ctx context.Context, newAttrs ...slog.Attr) context.Context {
 	// Get fields if set
-	attrs, _ := ctx.Value(ctxkey{}).(map[string]slog.Attr)
-	if attrs == nil {
-		attrs = make(map[string]slog.Attr, len(newAttrs))
+	oldAttrs, _ := ctx.Value(ctxkey{}).(map[string]slog.Attr)
+
+	// Make new map so we aren't modifying the previous map resulting in a race condition
+	attrs := make(map[string]slog.Attr, len(newAttrs)+len(oldAttrs))
+	for _, attr := range oldAttrs {
+		attrs[attr.Key] = attr
 	}
 	for _, attr := range newAttrs {
 		attrs[attr.Key] = attr
@@ -27,9 +31,10 @@ func GetAttrs(ctx context.Context) []slog.Attr {
 	for _, attr := range attrMap {
 		attrs = append(attrs, attr)
 	}
-	globalAttrMap, ok := ctx.Value(globalctxkey{}).(*map[string]slog.Attr)
+	globalAttrMap, ok := ctx.Value(globalctxkey{}).(*atomic.Pointer[map[string]slog.Attr])
 	if ok && globalAttrMap != nil {
-		for _, attr := range *globalAttrMap {
+
+		for _, attr := range *globalAttrMap.Load() {
 			attrs = append(attrs, attr)
 		}
 	}
@@ -76,22 +81,35 @@ func AnchorGlobalAttrs(ctx context.Context) context.Context {
 // If AnchorGlobalAttrs has not been called yet for the given context, the
 // returned context will be set as the anchor point.
 func WithGlobalAttrs(ctx context.Context, newAttrs ...slog.Attr) context.Context {
-	attrs, ok := ctx.Value(globalctxkey{}).(*map[string]slog.Attr)
-	if !ok {
-		ctx, attrs = initGlobalAttrs(ctx)
+	attrsAtomic, ok := ctx.Value(globalctxkey{}).(*atomic.Pointer[map[string]slog.Attr])
+	if !ok || attrsAtomic == nil {
+		ctx, attrsAtomic = initGlobalAttrs(ctx)
 	}
-	if attrs == nil {
-		m := make(map[string]slog.Attr, len(newAttrs))
-		attrs = &m
+
+	// FIXME: Should we use a mutex instead of atomics to prevent a gap in read
+	// -> write that can lead to missing attrs?
+	oldAttrs := attrsAtomic.Load()
+	if oldAttrs == nil {
+		attrsNew := make(map[string]slog.Attr, len(newAttrs))
+		oldAttrs = &attrsNew
+	}
+
+	attrs := make(map[string]slog.Attr, len(newAttrs)+len(*oldAttrs))
+	for _, attr := range *oldAttrs {
+		attrs[attr.Key] = attr
 	}
 	for _, attr := range newAttrs {
-		(*attrs)[attr.Key] = attr
+		attrs[attr.Key] = attr
 	}
+	attrsAtomic.Store(&attrs)
+
 	return ctx
 }
 
-func initGlobalAttrs(ctx context.Context) (context.Context, *map[string]slog.Attr) {
-	globalAttrs := &map[string]slog.Attr{}
-	ctx = context.WithValue(ctx, globalctxkey{}, globalAttrs)
-	return ctx, globalAttrs
+func initGlobalAttrs(ctx context.Context) (context.Context, *atomic.Pointer[map[string]slog.Attr]) {
+	m := make(map[string]slog.Attr)
+	globalAttrs := atomic.Pointer[map[string]slog.Attr]{}
+	globalAttrs.Store(&m)
+	ctx = context.WithValue(ctx, globalctxkey{}, &globalAttrs)
+	return ctx, &globalAttrs
 }
