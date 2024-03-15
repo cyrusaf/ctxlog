@@ -3,6 +3,7 @@ package ctxlog_test
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"testing"
 
 	"github.com/cyrusaf/ctxlog"
@@ -53,6 +54,23 @@ func TestOverwriteAttr(t *testing.T) {
 
 	attrs := ctxlog.GetAttrs(ctx)
 	assertAttrs(t, []slog.Attr{attr2}, attrs)
+}
+
+func TestWithAttrsRace(t *testing.T) {
+	ctx := context.Background()
+	ctx = ctxlog.WithAttrs(ctx, slog.String("foo", "bar"))
+	ctx = ctxlog.AnchorGlobalAttrs(ctx)
+	wg := sync.WaitGroup{}
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		i := 1
+		go func() {
+			defer wg.Done()
+			ctxlog.WithAttrs(ctx, slog.Int("local", i))
+			ctxlog.WithGlobalAttrs(ctx, slog.Int("global", i))
+		}()
+	}
+	wg.Wait()
 }
 
 func assertAttrs(t *testing.T, expected, actual []slog.Attr) {
