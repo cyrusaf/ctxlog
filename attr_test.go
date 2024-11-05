@@ -73,6 +73,29 @@ func TestWithAttrsRace(t *testing.T) {
 	wg.Wait()
 }
 
+func TestSecondAnchor(t *testing.T) {
+	ctx := context.Background()
+
+	// Test global attrs. Use _ = to drop returned context so the global flow
+	// is properly tested.
+	ctx = ctxlog.AnchorGlobalAttrs(ctx)
+	attr1 := slog.String("hello", "world")
+	attr2 := slog.Int("foo", 5)
+	_ = ctxlog.WithGlobalAttrs(ctx, attr1)
+	_ = ctxlog.WithGlobalAttrs(ctx, attr2)
+
+	ctx = ctxlog.AnchorGlobalAttrs(ctx)
+	attr3 := slog.Int("bar", 1)
+	attr4 := slog.Int("baz", 2)
+	_ = ctxlog.WithGlobalAttrs(ctx, attr3)
+	_ = ctxlog.WithGlobalAttrs(ctx, attr4)
+
+	expectedAttrs := []slog.Attr{attr1, attr2, attr3, attr4}
+
+	attrs := ctxlog.GetAttrs(ctx)
+	assertAttrs(t, expectedAttrs, attrs)
+}
+
 func assertAttrs(t *testing.T, expected, actual []slog.Attr) {
 	t.Helper()
 

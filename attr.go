@@ -33,7 +33,6 @@ func GetAttrs(ctx context.Context) []slog.Attr {
 	}
 	globalAttrMap, ok := ctx.Value(globalctxkey{}).(*atomic.Pointer[map[string]slog.Attr])
 	if ok && globalAttrMap != nil {
-
 		for _, attr := range *globalAttrMap.Load() {
 			attrs = append(attrs, attr)
 		}
@@ -66,9 +65,13 @@ func GetAttrs(ctx context.Context) []slog.Attr {
 // attached to the context. `WithGlobalAttrs` will modify the global attrs up to
 // this point.
 //
-// AnchorGlobalAttrs can be used to anchor global attrs to a given request,
-// rather than the context created at the beginning of the server.
+// If AnchorGlobalAttrs is called on a context with an existing anchor point, it
+// will act as noop and use the original anchor point.
 func AnchorGlobalAttrs(ctx context.Context) context.Context {
+	_, ok := ctx.Value(globalctxkey{}).(*atomic.Pointer[map[string]slog.Attr])
+	if ok {
+		return ctx
+	}
 	ctx, _ = initGlobalAttrs(ctx)
 	return ctx
 }
